@@ -27,6 +27,9 @@ class ImageMagick extends AbstractConverter
     use ExecTrait;
     use EncodingAutoTrait;
 
+    private $version;   /* full version string - set in checkOperationality() */
+    private $versionNumber;  /* extracted version number or "unknown" */
+
     protected function getUnsupportedDefaultOptions()
     {
         return [
@@ -137,6 +140,12 @@ class ImageMagick extends AbstractConverter
                 'imagemagick is not installed (cannot execute: "' . $this->getPath() . '")'
             );
         }
+
+        $this->version = $this->getVersion();
+
+        preg_match('#\d+\.\d+\.\d+[\d\.\-]+#', $this->version, $matches);
+        $this->versionNumber = (isset($matches[0]) ? $matches[0] : 'unknown');
+
     }
 
     /**
@@ -164,6 +173,19 @@ class ImageMagick extends AbstractConverter
                 throw new SystemRequirementsNotMetException($destinationType . ' delegate missing');
             }
         }
+
+        /*
+        Commented out the following test, because I have AVIF working in 6.9.11-60.
+        So, which version was it actually introduced?
+
+        if (($sourceType == 'avif') || ($destinationType == 'avif')) {
+            if (version_compare($this->versionNumber, '7.0.25', '<')) {
+                throw new SystemRequirementsNotMetException(
+                    'Your version of imagemagick does not support AVIF. You need at least imagemagick 7.0.25' .
+                    ' (your version is: ' . $this->versionNumber . ')'
+                );
+            }
+        }*/
     }
 
     /**
@@ -173,7 +195,7 @@ class ImageMagick extends AbstractConverter
      * @param  string $versionNumber. Ie "6.9.10-23"
      * @return void
      */
-    private function prependWebPCommandLineArguments($commandArguments, $versionNumber = 'unknown')
+    private function prependWebPCommandLineArguments($commandArguments)
     {
         $options = $this->options;
 
@@ -220,7 +242,7 @@ class ImageMagick extends AbstractConverter
         }
 
         if ($options['sharp-yuv'] === true) {
-            if (version_compare($versionNumber, '7.0.8-26', '>=')) {
+            if (version_compare($this->versionNumber, '7.0.8-26', '>=')) {
                 $commandArguments[] = '-define webp:use-sharp-yuv=true';
             } else {
                 $this->logLn(
@@ -232,7 +254,7 @@ class ImageMagick extends AbstractConverter
         }
 
         if ($options['near-lossless'] != 100) {
-            if (version_compare($versionNumber, '7.0.10-54', '>=')) { // #299
+            if (version_compare($this->versionNumber, '7.0.10-54', '>=')) { // #299
                 $commandArguments[] = '-define webp:near-lossless=' . escapeshellarg($options['near-lossless']);
             } else {
                 $this->logLn(
@@ -251,10 +273,9 @@ class ImageMagick extends AbstractConverter
     /**
      * Build command line options
      *
-     * @param  string $versionNumber. Ie "6.9.10-23"
      * @return string
      */
-    private function createCommandLineOptions($versionNumber = 'unknown')
+    private function createCommandLineOptions()
     {
         // Available webp options for imagemagick are documented here:
         // - https://imagemagick.org/script/webp.php
@@ -275,7 +296,7 @@ class ImageMagick extends AbstractConverter
         $options = $this->options;
 
         if ($this->destinationType == 'webp') {
-            $commandArguments = $this->prependWebPCommandLineArguments($commandArguments, $versionNumber);
+            $commandArguments = $this->prependWebPCommandLineArguments($commandArguments);
         }
 
         $commandArguments[] = escapeshellarg($this->source);
@@ -286,16 +307,10 @@ class ImageMagick extends AbstractConverter
 
     protected function doActualConvert()
     {
-        $version = $this->getVersion();
+        $this->logLn($this->version);
+        $this->logLn('Extracted version number: ' . $this->versionNumber);
 
-        $this->logLn($version);
-
-        preg_match('#\d+\.\d+\.\d+[\d\.\-]+#', $version, $matches);
-        $versionNumber = (isset($matches[0]) ? $matches[0] : 'unknown');
-
-        $this->logLn('Extracted version number: ' . $versionNumber);
-
-        $command = $this->getPath() . ' ' . $this->createCommandLineOptions($versionNumber) . ' 2>&1';
+        $command = $this->getPath() . ' ' . $this->createCommandLineOptions() . ' 2>&1';
 
         $useNice = ($this->options['use-nice'] && $this->checkNiceSupport());
         if ($useNice) {

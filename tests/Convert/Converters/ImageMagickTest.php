@@ -53,6 +53,26 @@ class ImageMagickTest extends TestCase
         echo $bufferLogger->getText("\n");
     }*/
 
+    /*public function testConvertJpg2Avif()
+    {
+        $source = self::getImagePath('test.jpg');
+        $options = [];
+
+        $bufferLogger = new BufferLogger();
+        ImageMagick::convert($source, self::getImagePath('test.jpg.avif'), $options, $bufferLogger);
+        echo $bufferLogger->getText("\n");
+    }*/
+
+    public function testConvertAvif2Jpeg()
+    {
+        $source = self::getImagePath('avif-test.avif');
+        $options = [];
+
+        $bufferLogger = new BufferLogger();
+        ImageMagick::convert($source, self::getImagePath('avif-test.avif.jpg'), $options, $bufferLogger);
+        echo $bufferLogger->getText("\n");
+    }
+
     private static function tryThis($test, $source, $options)
     {
         $bufferLogger = new BufferLogger();

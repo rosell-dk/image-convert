@@ -20,7 +20,8 @@ class InputValidator
     private static $allowedMimeTypes = [
         'image/jpeg',
         'image/png',
-        'image/webp'
+        'image/webp',
+        'image/avif',
     ];
 
     /**

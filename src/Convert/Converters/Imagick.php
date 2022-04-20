@@ -49,11 +49,6 @@ class Imagick extends AbstractConverter
                 'iMagick is installed, but not correctly. The class Imagick is not available'
             );
         }
-
-        $im = new \Imagick();
-        if (!in_array('WEBP', $im->queryFormats('WEBP'))) {
-            throw new SystemRequirementsNotMetException('iMagick was compiled without WebP support.');
-        }
     }
 
     /**
@@ -67,22 +62,15 @@ class Imagick extends AbstractConverter
     public function checkConvertability($sourceType, $destinationType)
     {
         $im = new \Imagick();
-        $mimeType = $this->getMimeTypeOfSource();
-        switch ($mimeType) {
-            case 'image/png':
-                if (!in_array('PNG', $im->queryFormats('PNG'))) {
-                    throw new SystemRequirementsNotMetException(
-                        'Imagick has been compiled without PNG support and can therefore not convert this PNG image.'
-                    );
-                }
-                break;
-            case 'image/jpeg':
-                if (!in_array('JPEG', $im->queryFormats('JPEG'))) {
-                    throw new SystemRequirementsNotMetException(
-                        'Imagick has been compiled without Jpeg support and can therefore not convert this Jpeg image.'
-                    );
-                }
-                break;
+
+        $formatsNeeded = [$sourceType, $destinationType];
+        foreach ($formatsNeeded as $format) {
+            $formatUC = strtoupper($format);
+            if (!in_array($formatUC, $im->queryFormats($formatUC))) {
+                throw new SystemRequirementsNotMetException(
+                    'iMagick has been compiled without ' . $formatUC . ' support.'
+                );
+            }
         }
     }
 
@@ -121,57 +109,61 @@ class Imagick extends AbstractConverter
         $extVersion = (defined('\Imagick::IMAGICK_EXTVER') ? \Imagick::IMAGICK_EXTVER : phpversion('imagick'));
         $this->logLn('Imagic extension version: ' . $extVersion);
 
-        $im->setImageFormat('WEBP');
 
-        if (!is_null($options['preset'])) {
-            if ($options['preset'] != 'none') {
-                $imageHint = $options['preset'];
-                switch ($imageHint) {
-                    case 'drawing':
-                    case 'icon':
-                    case 'text':
-                        $imageHint = 'graph';
-                        $this->logLn(
-                            'The "preset" value was mapped to "graph" because imagick does not support "drawing",' .
-                            ' "icon" and "text", but grouped these into one option: "graph".'
-                        );
+        $im->setImageFormat(strtoupper($this->destinationType));
+
+        if ($this->destinationType == 'webp') {
+            if (!is_null($options['preset'])) {
+                if ($options['preset'] != 'none') {
+                    $imageHint = $options['preset'];
+                    switch ($imageHint) {
+                        case 'drawing':
+                        case 'icon':
+                        case 'text':
+                            $imageHint = 'graph';
+                            $this->logLn(
+                                'The "preset" value was mapped to "graph" because imagick does not support "drawing",' .
+                                ' "icon" and "text", but grouped these into one option: "graph".'
+                            );
+                    }
+                    $im->setOption('webp:image-hint', $imageHint);
                 }
-                $im->setOption('webp:image-hint', $imageHint);
+            }
+
+            $im->setOption('webp:method', $options['method']);
+            $im->setOption('webp:lossless', $options['encoding'] == 'lossless' ? 'true' : 'false');
+            $im->setOption('webp:low-memory', $options['low-memory'] ? 'true' : 'false');
+            $im->setOption('webp:alpha-quality', $options['alpha-quality']);
+
+            if ($options['near-lossless'] != 100) {
+                if (version_compare($versionNumber, '7.0.10-54', '>=')) {
+                    $im->setOption('webp:near-lossless', $options['near-lossless']);
+                } else {
+                    $this->logLn(
+                        'Note: near-lossless is not supported in your version of ImageMagick. ' .
+                            'ImageMagic >= 7.0.10-54 is required',
+                        'italic'
+                    );
+                }
+            }
+
+            if ($options['auto-filter'] === true) {
+                $im->setOption('webp:auto-filter', 'true');
+            }
+
+            if ($options['sharp-yuv'] === true) {
+                if (version_compare($versionNumber, '7.0.8-26', '>=')) {
+                    $im->setOption('webp:use-sharp-yuv', 'true');
+                } else {
+                    $this->logLn(
+                        'Note: "sharp-yuv" option is not supported in your version of ImageMagick. ' .
+                          'ImageMagic >= 7.0.8-26 is required',
+                        'italic'
+                    );
+                }
             }
         }
 
-        $im->setOption('webp:method', $options['method']);
-        $im->setOption('webp:lossless', $options['encoding'] == 'lossless' ? 'true' : 'false');
-        $im->setOption('webp:low-memory', $options['low-memory'] ? 'true' : 'false');
-        $im->setOption('webp:alpha-quality', $options['alpha-quality']);
-
-        if ($options['near-lossless'] != 100) {
-            if (version_compare($versionNumber, '7.0.10-54', '>=')) {
-                $im->setOption('webp:near-lossless', $options['near-lossless']);
-            } else {
-                $this->logLn(
-                    'Note: near-lossless is not supported in your version of ImageMagick. ' .
-                        'ImageMagic >= 7.0.10-54 is required',
-                    'italic'
-                );
-            }
-        }
-
-        if ($options['auto-filter'] === true) {
-            $im->setOption('webp:auto-filter', 'true');
-        }
-
-        if ($options['sharp-yuv'] === true) {
-            if (version_compare($versionNumber, '7.0.8-26', '>=')) {
-                $im->setOption('webp:use-sharp-yuv', 'true');
-            } else {
-                $this->logLn(
-                    'Note: "sharp-yuv" option is not supported in your version of ImageMagick. ' .
-                      'ImageMagic >= 7.0.8-26 is required',
-                    'italic'
-                );
-            }
-        }
 
         if ($options['metadata'] == 'none') {
             // To strip metadata, we need to use the stripImage() method. However, that method does not only remove

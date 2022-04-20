@@ -3,6 +3,9 @@
 namespace ImageConvert\Tests\Convert\Converters;
 
 use ImageConvert\Convert\Converters\Imagick;
+use ImageConvert\Loggers\BufferLogger;
+
+use ImageMimeTypeGuesser\ImageMimeTypeGuesser;;
 
 use PHPUnit\Framework\TestCase;
 
@@ -15,9 +18,64 @@ class ImagickTest extends TestCase
 
     public static $imageDir = __DIR__ . '/../../images/';
 
+    public static function getImageFolder()
+    {
+        return realpath(__DIR__ . '/../../images');
+    }
+
+    public static function getImagePath($image)
+    {
+        return self::getImageFolder() . '/' . $image;
+    }
+
     public function testConvert()
     {
         ConverterTestHelper::runAllConvertTests($this, 'Imagick');
+    }
+
+    public function testConvertPng2Jpg()
+    {
+        $source = self::getImagePath('test.png');
+        $destination = self::getImagePath('test.png.jpg');
+
+        $bufferLogger = new BufferLogger();
+        Imagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertJpg2PNG()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.png');
+
+        $bufferLogger = new BufferLogger();
+        Imagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertJpg2Avif()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.avif');
+
+        $bufferLogger = new BufferLogger();
+        Imagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertAvif2Jpeg()
+    {
+        $source = self::getImagePath('avif-test.avif');
+        $destination = self::getImagePath('test.png.jpg');
+
+        $bufferLogger = new BufferLogger();
+        Imagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
     }
 
     /**

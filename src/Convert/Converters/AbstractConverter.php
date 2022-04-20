@@ -74,6 +74,12 @@ abstract class AbstractConverter
     /** @var string  Mime type of destination (mapped from filename) */
     protected $destinationMime;
 
+    /** @var string  Image type of source (ie "jpeg") */
+    protected $sourceType;
+
+    /** @var string  Image type of destination (ie "jpeg") */
+    protected $destinationType;
+
     /**
      * Check basis operationality
      *

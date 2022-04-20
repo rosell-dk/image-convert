@@ -145,7 +145,6 @@ class ImageMagick extends AbstractConverter
 
         preg_match('#\d+\.\d+\.\d+[\d\.\-]+#', $this->version, $matches);
         $this->versionNumber = (isset($matches[0]) ? $matches[0] : 'unknown');
-
     }
 
     /**

@@ -12,6 +12,8 @@ use ImageConvert\Convert\Converters\ImageMagick;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperationalException;
 use ImageConvert\Loggers\BufferLogger;
 
+use ImageMimeTypeGuesser\ImageMimeTypeGuesser;;
+
 use PHPUnit\Framework\TestCase;
 
 class ImageMagickTest extends TestCase
@@ -32,45 +34,48 @@ class ImageMagickTest extends TestCase
         ConverterTestHelper::runAllConvertTests($this, 'ImageMagick');
     }
 
-    /*public function testConvertPng2Jpg()
+    public function testConvertPng2Jpg()
     {
         $source = self::getImagePath('test.png');
-        $options = [];
+        $destination = self::getImagePath('test.png.jpg');
 
         $bufferLogger = new BufferLogger();
-        ImageMagick::convert($source, self::getImagePath('test.png.jpg'), $options, $bufferLogger);
-        echo $bufferLogger->getText("\n");
-    }*/
+        ImageMagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+    }
 
-/*
+
     public function testConvertJpg2PNG()
     {
         $source = self::getImagePath('test.jpg');
-        $options = [];
+        $destination = self::getImagePath('test.jpg.png');
 
         $bufferLogger = new BufferLogger();
-        ImageMagick::convert($source, self::getImagePath('test.jpg.png'), $options, $bufferLogger);
-        echo $bufferLogger->getText("\n");
-    }*/
+        ImageMagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
 
-    /*public function testConvertJpg2Avif()
+    public function testConvertJpg2Avif()
     {
         $source = self::getImagePath('test.jpg');
-        $options = [];
+        $destination = self::getImagePath('test.jpg.avif');
 
         $bufferLogger = new BufferLogger();
-        ImageMagick::convert($source, self::getImagePath('test.jpg.avif'), $options, $bufferLogger);
-        echo $bufferLogger->getText("\n");
-    }*/
+        ImageMagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
 
     public function testConvertAvif2Jpeg()
     {
         $source = self::getImagePath('avif-test.avif');
-        $options = [];
+        $destination = self::getImagePath('test.png.jpg');
 
         $bufferLogger = new BufferLogger();
-        ImageMagick::convert($source, self::getImagePath('avif-test.avif.jpg'), $options, $bufferLogger);
-        echo $bufferLogger->getText("\n");
+        ImageMagick::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
     }
 
     private static function tryThis($test, $source, $options)

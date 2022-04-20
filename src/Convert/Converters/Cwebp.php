@@ -14,7 +14,6 @@ use ImageConvert\Convert\Exceptions\ConversionFailedException;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperationalException;
 use ImageConvert\Options\OptionFactory;
 
-
 /**
  * Convert images to webp by calling cwebp binary.
  *

@@ -57,11 +57,14 @@ class Imagick extends AbstractConverter
     }
 
     /**
-     * Check if specific file is convertable with current converter / converter settings.
+     * Check if converter supports converting between the two formats
      *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
      * @throws SystemRequirementsNotMetException  if Imagick does not support image type
      */
-    public function checkConvertability()
+    public function checkConvertability($sourceType, $destinationType)
     {
         $im = new \Imagick();
         $mimeType = $this->getMimeTypeOfSource();

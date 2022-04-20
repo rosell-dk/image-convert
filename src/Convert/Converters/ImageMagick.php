@@ -96,12 +96,11 @@ class ImageMagick extends AbstractConverter
         return ($returnCode == 0);
     }
 
-    // Check if webp delegate is installed
-    public function isWebPDelegateInstalled()
+    public function isDelegateInstalled($delegate)
     {
         ExecWithFallback::exec($this->getPath() . ' -list delegate 2>&1', $output, $returnCode);
         foreach ($output as $line) {
-            if (preg_match('#webp\\s*=#i', $line)) {
+            if (preg_match('#' . $delegate . '\\s*=#i', $line)) {
                 return true;
             }
         }
@@ -109,14 +108,19 @@ class ImageMagick extends AbstractConverter
         // try other command
         ExecWithFallback::exec($this->getPath() . ' -list configure 2>&1', $output, $returnCode);
         foreach ($output as $line) {
-            if (preg_match('#DELEGATE.*webp#i', $line)) {
+            if (preg_match('#DELEGATE.*' . $delegate . '#i', $line)) {
                 return true;
             }
         }
 
-        return false;
-
         // PS, convert -version does not output delegates on travis, so it is not reliable
+        return false;
+    }
+
+    // Check if webp delegate is installed
+    public function isWebPDelegateInstalled()
+    {
+        return $this->isDelegateInstalled('webp');
     }
 
     /**
@@ -133,35 +137,44 @@ class ImageMagick extends AbstractConverter
                 'imagemagick is not installed (cannot execute: "' . $this->getPath() . '")'
             );
         }
-        if (!$this->isWebPDelegateInstalled()) {
-            throw new SystemRequirementsNotMetException('webp delegate missing');
+    }
+
+    /**
+     * Converters may override this for the purpose of performing checks on the concrete file.
+     *
+     * This can for example be used for rejecting big uploads in cloud converters or rejecting unsupported
+     * image types.
+     *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
+     */
+    public function checkConvertability($sourceType, $destinationType)
+    {
+        $needsDelegates = ['webp'];
+
+        if (in_array($sourceType, $needsDelegates)) {
+            if (!$this->isDelegateInstalled($sourceType)) {
+                throw new SystemRequirementsNotMetException($sourceType . ' delegate missing');
+            }
+        }
+
+        if (in_array($destinationType, $needsDelegates)) {
+            if (!$this->isDelegateInstalled($destinationType)) {
+                throw new SystemRequirementsNotMetException($destinationType . ' delegate missing');
+            }
         }
     }
 
     /**
-     * Build command line options
+     * Prepend webp command line arguments to array
      *
+     * @param  array commandArguments
      * @param  string $versionNumber. Ie "6.9.10-23"
-     * @return string
+     * @return void
      */
-    private function createCommandLineOptions($versionNumber = 'unknown')
+    private function prependWebPCommandLineArguments($commandArguments, $versionNumber = 'unknown')
     {
-        // Available webp options for imagemagick are documented here:
-        // - https://imagemagick.org/script/webp.php
-        // - https://github.com/ImageMagick/ImageMagick/blob/main/coders/webp.c
-
-        // We should perhaps implement low-memory. Its already in cwebp, it
-        // could perhaps be promoted to a general option
-
-        $commandArguments = [];
-        if ($this->isQualityDetectionRequiredButFailing()) {
-            // quality:auto was specified, but could not be determined.
-            // we cannot apply the max-quality logic, but we can provide auto quality
-            // simply by not specifying the quality option.
-        } else {
-            $commandArguments[] = '-quality ' . escapeshellarg($this->getCalculatedQuality());
-        }
-
         $options = $this->options;
 
         if (!is_null($options['preset'])) {
@@ -232,9 +245,41 @@ class ImageMagick extends AbstractConverter
 
         // "method" is at least available from 6.9.4-0 (I can't see further back)
         $commandArguments[] = '-define webp:method=' . $options['method'];
+        return $commandArguments;
+    }
+
+    /**
+     * Build command line options
+     *
+     * @param  string $versionNumber. Ie "6.9.10-23"
+     * @return string
+     */
+    private function createCommandLineOptions($versionNumber = 'unknown')
+    {
+        // Available webp options for imagemagick are documented here:
+        // - https://imagemagick.org/script/webp.php
+        // - https://github.com/ImageMagick/ImageMagick/blob/main/coders/webp.c
+
+        // We should perhaps implement low-memory. Its already in cwebp, it
+        // could perhaps be promoted to a general option
+
+        $commandArguments = [];
+        if ($this->isQualityDetectionRequiredButFailing()) {
+            // quality:auto was specified, but could not be determined.
+            // we cannot apply the max-quality logic, but we can provide auto quality
+            // simply by not specifying the quality option.
+        } else {
+            $commandArguments[] = '-quality ' . escapeshellarg($this->getCalculatedQuality());
+        }
+
+        $options = $this->options;
+
+        if ($this->destinationType == 'webp') {
+            $commandArguments = $this->prependWebPCommandLineArguments($commandArguments, $versionNumber);
+        }
 
         $commandArguments[] = escapeshellarg($this->source);
-        $commandArguments[] = escapeshellarg('webp:' . $this->destination);
+        $commandArguments[] = escapeshellarg($this->destinationType . ':' . $this->destination);
 
         return implode(' ', $commandArguments);
     }

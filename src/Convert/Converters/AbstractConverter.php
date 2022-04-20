@@ -16,6 +16,8 @@ use ImageConvert\Convert\Converters\BaseTraits\WarningLoggerTrait;
 use ImageConvert\Exceptions\ImageConvertException;
 use ImageConvert\Loggers\BaseLogger;
 
+use ImageMimeTypeGuesser\MimeMap;
+
 /**
  * Base for all converter classes.
  *
@@ -66,6 +68,12 @@ abstract class AbstractConverter
     /** @var string  Where to save the webp (complete path) */
     protected $destination;
 
+    /** @var string  Mime type of source (leniently detected) */
+    protected $sourceMime;
+
+    /** @var string  Mime type of destination (mapped from filename) */
+    protected $destinationMime;
+
     /**
      * Check basis operationality
      *
@@ -80,7 +88,7 @@ abstract class AbstractConverter
      *   For that pupose, converters should override checkConvertability
      *   Also note that doConvert method is allowed to throw ConverterNotOperationalException too.
      *
-     * @return  void
+     * @return void
      */
     public function checkOperationality()
     {
@@ -92,9 +100,11 @@ abstract class AbstractConverter
      * This can for example be used for rejecting big uploads in cloud converters or rejecting unsupported
      * image types.
      *
-     * @return  void
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
      */
-    public function checkConvertability()
+    public function checkConvertability($sourceType, $destinationType)
     {
     }
 
@@ -117,6 +127,13 @@ abstract class AbstractConverter
         $this->destination = $destination;
 
         $this->setLogger($logger);
+
+        $this->sourceMime = MimeType::getMimeTypeDetectionResult($source);
+        $this->destinationMime = MimeMap::filenameToMime($destination);
+
+        $this->sourceType = explode('/', $this->sourceMime)[1];
+        $this->destinationType = explode('/', $this->destinationMime)[1];
+
         $this->setProvidedOptions($options);
 
         if (!isset($this->options['_skip_input_check'])) {
@@ -235,6 +252,9 @@ abstract class AbstractConverter
 
         $this->checkOptions();
 
+        $this->checkOperationality();
+        $this->checkConvertability($this->sourceType, $this->destinationType);
+
         // Prepare destination folder
         $this->createWritableDestinationFolder();
         $this->removeExistingDestinationIfExists();
@@ -243,9 +263,6 @@ abstract class AbstractConverter
             // Check that a file can be written to destination
             $this->checkDestinationWritable();
         }
-
-        $this->checkOperationality();
-        $this->checkConvertability();
 
         if ($this->options['log-call-arguments']) {
             $this->logOptions();

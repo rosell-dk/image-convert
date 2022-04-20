@@ -20,11 +20,13 @@ class InputValidator
     private static $allowedMimeTypes = [
         'image/jpeg',
         'image/png',
-        'image/webp'        
+        'image/webp'
     ];
 
     /**
      * Check mimetype and if file path is ok and exists
+     *
+     * @return void
      */
     public static function checkMimeType($filePath, $allowedMimeTypes = null)
     {

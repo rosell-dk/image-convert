@@ -100,7 +100,7 @@ trait ExecTrait
     {
         if (!ExecWithFallback::anyAvailable()) {
             throw new SystemRequirementsNotMetException(
-                'exec() is not enabled (nor is alternative methods, such as proc_open())'
+                'exec() is not enabled (neather is alternative methods, such as proc_open())'
             );
         }
     }

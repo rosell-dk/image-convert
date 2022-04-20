@@ -90,11 +90,14 @@ class Vips extends AbstractConverter
     }
 
     /**
-     * Check if specific file is convertable with current converter / converter settings.
+     * Check if converter supports converting between the two formats
      *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
      * @throws SystemRequirementsNotMetException  if Vips does not support image type
      */
-    public function checkConvertability()
+    public function checkConvertability($sourceType, $destinationType)
     {
         // It seems that png and jpeg are always supported by Vips
         // - so nothing needs to be done here

@@ -64,8 +64,12 @@ trait CloudConverterTrait
 
     /**
      * Check convertability of cloud converters (file upload limits).
+     *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
      */
-    public function checkConvertability()
+    public function checkConvertability($sourceType, $destinationType)
     {
         $this->checkConvertabilityCloudConverterTrait();
     }

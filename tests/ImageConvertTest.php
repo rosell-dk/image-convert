@@ -124,7 +124,6 @@ https://phpunit.readthedocs.io/en/7.1/writing-tests-for-phpunit.html#testing-exc
      *  ImageConvert::convert should in that case return false
     */
 
-/*
 
     public function testConvertWithNoConverters()
     {
@@ -195,7 +194,7 @@ https://phpunit.readthedocs.io/en/7.1/writing-tests-for-phpunit.html#testing-exc
         ImageConvert::convert(__DIR__ . '/test.jpg', $destinationFolder . 'you-can-delete-me.webp');
 
         restore_error_handler();
-    }*/
+    }
 
     /**
      * Test ConversionSkippedException by testing Gd.

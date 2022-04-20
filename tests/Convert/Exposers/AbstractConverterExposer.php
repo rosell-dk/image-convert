@@ -33,7 +33,7 @@ class AbstractConverterExposer extends BaseExposer {
         $inject = function() {
             try {
                 $this->checkOperationality();
-                $this->checkConvertability();
+                $this->checkConvertability('png', 'webp');
             } catch (\Exception $e) {
                 return false;
             }

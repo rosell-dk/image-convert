@@ -82,7 +82,11 @@ trait EncodingAutoTrait
 
     protected function runActualConvert()
     {
-        if (!$this->passOnEncodingAuto() && ($this->getOptions()['encoding'] == 'auto') && $this->supportsLossless()) {
+        if (($this->destinationType == 'webp') &&
+            !$this->passOnEncodingAuto() &&
+            ($this->getOptions()['encoding'] == 'auto') &&
+            $this->supportsLossless()
+        ) {
             $this->convertTwoAndSelectSmallest();
         } else {
             $this->doActualConvert();

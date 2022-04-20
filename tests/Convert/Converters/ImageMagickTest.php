@@ -32,6 +32,27 @@ class ImageMagickTest extends TestCase
         ConverterTestHelper::runAllConvertTests($this, 'ImageMagick');
     }
 
+    /*public function testConvertPng2Jpg()
+    {
+        $source = self::getImagePath('test.png');
+        $options = [];
+
+        $bufferLogger = new BufferLogger();
+        ImageMagick::convert($source, self::getImagePath('test.png.jpg'), $options, $bufferLogger);
+        echo $bufferLogger->getText("\n");
+    }*/
+
+/*
+    public function testConvertJpg2PNG()
+    {
+        $source = self::getImagePath('test.jpg');
+        $options = [];
+
+        $bufferLogger = new BufferLogger();
+        ImageMagick::convert($source, self::getImagePath('test.jpg.png'), $options, $bufferLogger);
+        echo $bufferLogger->getText("\n");
+    }*/
+
     private static function tryThis($test, $source, $options)
     {
         $bufferLogger = new BufferLogger();

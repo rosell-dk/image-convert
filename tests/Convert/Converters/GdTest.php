@@ -85,7 +85,7 @@ class GdTest extends TestCase
 
         $pretend['functionsNotExisting'] = ['imagecreatefrompng'];
         $this->expectException(SystemRequirementsNotMetException::class);
-        $gd->checkConvertability();
+        $gd->checkConvertability('png', 'webp');
         $pretend['functionsNotExisting'] = [];
     }
 
@@ -98,7 +98,7 @@ class GdTest extends TestCase
         self::resetPretending();
 
         $pretend['functionsExisting'] = ['imagecreatefrompng'];
-        $gd->checkConvertability();
+        $gd->checkConvertability('png', 'webp');
         $pretend['functionsExisting'] = [];
     }
 
@@ -112,7 +112,8 @@ class GdTest extends TestCase
 
         $pretend['functionsNotExisting'] = ['imagecreatefromjpeg'];
         $this->expectException(SystemRequirementsNotMetException::class);
-        $gd->checkConvertability();
+        $gd->checkConvertability('png', 'webp');
+
         $pretend['functionsNotExisting'] = [];
     }
 

@@ -74,11 +74,14 @@ class Gd extends AbstractConverter
     }
 
     /**
-     * Check if specific file is convertable with current converter / converter settings.
+     * Check if converter supports converting between the two formats
      *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
      * @throws SystemRequirementsNotMetException  if Gd has been compiled without support for image type
      */
-    public function checkConvertability()
+    public function checkConvertability($sourceType, $destinationType)
     {
         $mimeType = $this->getMimeTypeOfSource();
         switch ($mimeType) {
@@ -354,7 +357,7 @@ class Gd extends AbstractConverter
         // and - sorry - was to lazy to find out right now. So for now: better safe than sorry. #320
         $error = null;
         $success = false;
-        
+
         try {
             // Beware: This call can throw FATAL on windows (cannot be catched)
             // This for example happens on palette images

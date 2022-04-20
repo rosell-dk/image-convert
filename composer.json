@@ -55,7 +55,7 @@
     "php": "^5.6 | ^7.0 | ^8.0",
     "rosell-dk/exec-with-fallback": "^1.0.0",
     "rosell-dk/file-util": "^0.1.0",
-    "rosell-dk/image-mime-type-guesser": "^0.4.0",
+    "rosell-dk/image-mime-type-guesser": "^1.0",
     "rosell-dk/locate-binaries": "^1.0"
   },
   "suggest": {

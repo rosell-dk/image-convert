@@ -12,7 +12,7 @@ use ImageConvert\Convert\Converters\ImageMagick;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperationalException;
 use ImageConvert\Loggers\BufferLogger;
 
-use ImageMimeTypeGuesser\ImageMimeTypeGuesser;;
+use ImageMimeTypeGuesser\ImageMimeTypeGuesser;
 
 use PHPUnit\Framework\TestCase;
 

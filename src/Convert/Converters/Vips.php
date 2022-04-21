@@ -389,6 +389,7 @@ class Vips extends AbstractConverter
         $im = $this->createImageResource();
 
         list($params, $possiblyUnsupported) = $this->createParamsForVipsSave();
+        $this->logLn('vips params: ' . print_r($params, true));
 
         $this->saveImage($im, $params, $possiblyUnsupported);
 

@@ -31,9 +31,9 @@ class VipsExposer extends AbstractConverterExposer {
     {
         return $this->callPrivateFunction('doActualConvert', null);
     }
-
+/*
     public function webpsave($im, $options)
     {
         return $this->callPrivateFunction('webpsave', null, $im, $options);
-    }
+    }*/
 }

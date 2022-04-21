@@ -76,17 +76,77 @@ class Vips extends AbstractConverter
             );
         }
 
+    }
 
-        /** @scrutinizer ignore-call */ vips_error_buffer(); // clear error buffer
-        $result = /** @scrutinizer ignore-call */ vips_call('webpsave', null);
+    /**
+     * Vips load and save functions have an image type in its name
+     * Some use same name for the type as we do (ie "webpload" and "jpegload")
+     * Others differ. avif files are for example loaded with "heifload".
+     */
+    private function getVipsImageTypeName($imageType)
+    {
+        if (in_array($imageType, ['png', 'jpeg', 'webp', 'tiff', 'svg', 'gif'])) {
+            return $imageType;
+        }
+        switch ($imageType) {
+            case 'avif':
+                return 'heif';
+        }
+        return null;
+    }
+
+    private function getVipsLoadOrSaveFunctionName($loadOrSave = true)
+    {
+        $imageType = ($loadOrSave ? $this->sourceType : $this->destinationType);
+        $functionName = $this->getVipsImageTypeName($imageType);
+        if ($functionName == null) {
+            return null;
+        }
+        $functionName .= ($loadOrSave ? 'load' : 'save');
+        return $functionName;
+    }
+
+
+    private function checkCanLoadOrSave($loadOrSave = true)
+    {
+        $imageType = ($loadOrSave ? $this->sourceType : $this->destinationType);
+
+        $functionName = $this->getVipsLoadOrSaveFunctionName($loadOrSave);
+
+        if (is_null($functionName)) {
+            throw new SystemRequirementsNotMetException(
+                $sourceType . ' is not currently supported.'
+            );
+        }
+
+        if ($functionName == 'pngload') {
+            // pngload errors critically when called improperly, so we cannot test if pngload is there
+            // However, lets check 'pngsave' instead - it pngsave is there, so is pngload, probably
+            $functionName = 'pngsave';
+        }
+        if ($functionName == 'heifload') {
+            $functionName = 'heifsave';
+        }
+
+        $result = vips_call($functionName, null);
         if ($result == -1) {
             $message = vips_error_buffer();
-            if (strpos($message, 'VipsOperation: class "webpsave" not found') === 0) {
+            if (strpos($message, 'VipsOperation: class "' . $functionName . '" not found') === 0) {
                 throw new SystemRequirementsNotMetException(
-                    'Vips has not been compiled with webp support.'
+                    'Vips has not been compiled with ' . $imageType . ' support.'
                 );
             }
         }
+    }
+
+    private function checkCanLoad()
+    {
+        $this->checkCanLoadOrSave(true);
+    }
+
+    private function checkCanSave()
+    {
+        $this->checkCanLoadOrSave(false);
     }
 
     /**
@@ -99,10 +159,19 @@ class Vips extends AbstractConverter
      */
     public function checkConvertability($sourceType, $destinationType)
     {
-        // It seems that png and jpeg are always supported by Vips
-        // - so nothing needs to be done here
+        // https://www.libvips.org/API/current/func-list.html
+
+        // PS: To find php functions defined by vips, look here:
+        // https://github.com/libvips/php-vips-ext/blob/master/vips.c  (search for "PHP_FUNCTION(")
+        // vips_foreign_find_load()
+
+        // check names of functions here: https://www.libvips.org/API/current/VipsForeignSave.html#vips-ppmload
+
+        $this->checkCanLoad();
+        $this->checkCanSave();
 
         if (function_exists('vips_version')) {
+            // (added in 1.0.8: https://github.com/libvips/php-vips-ext/blob/master/ChangeLog)
             $this->logLn('vipslib version: ' . vips_version());
         }
         $this->logLn('vips extension version: ' . phpversion('vips'));
@@ -144,6 +213,54 @@ class Vips extends AbstractConverter
         return $im;
     }
 
+    /*
+     * Save, using vips extension.
+     *
+     * Tries to save image resource, using the supplied options.
+     * Vips fails when a parameter is not supported, but we detect this and unset that parameter and try again
+     * (recursively call itself until there is no more of these kind of errors).
+     */
+
+    private function saveImage($im, $options, $possiblyUnsupported)
+    {
+        vips_error_buffer(); // clear error buffer
+        $saveFunctionName = $this->getVipsLoadOrSaveFunctionName(false);
+        $result = vips_call($saveFunctionName, $im, $this->destination, $options);
+
+        //trigger_error('test-warning', E_USER_WARNING);
+        if ($result === -1) {
+            $message = /** @scrutinizer ignore-call */ vips_error_buffer();
+
+            $nameOfPropertyNotFound = '';
+            if (preg_match("#no property named .(.*).#", $message, $matches)) {
+                $nameOfPropertyNotFound = $matches[1];
+            } elseif (preg_match("#(.*)\\sunsupported$#", $message, $matches)) {
+                // Actually, I am not quite sure if this ever happens.
+                // I got a "near_lossless unsupported" error message in a build, but perhaps it rather a warning
+                if (isset($possiblyUnsupported[$matches[1]])) {
+                    $nameOfPropertyNotFound = $matches[1];
+                }
+            }
+
+            if ($nameOfPropertyNotFound != '') {
+                $msg = 'Note: Your version of vipslib does not support the "' .
+                    $nameOfPropertyNotFound . '" property';
+
+                if (isset($possiblyUnsupported[$nameOfPropertyNotFound])) {
+                    $msg .= ' ' . $possiblyUnsupported[$nameOfPropertyNotFound];
+                }
+                $msg .= '. The option is ignored.';
+
+                $this->logLn($msg, 'bold');
+
+                unset($options[$nameOfPropertyNotFound]);
+                $this->saveImage($im, $options, $possiblyUnsupported);
+            } else {
+                throw new ConversionFailedException($message);
+            }
+        }
+    }
+
     /**
      * Create parameters for webpsave
      *
@@ -154,6 +271,7 @@ class Vips extends AbstractConverter
         // webpsave options are described here:
         // https://libvips.github.io/libvips/API/current/VipsForeignSave.html#vips-webpsave
         // near_lossless option is described here: https://github.com/libvips/libvips/pull/430
+        // you can also get the list of supported option by executing: `vips webpsave`
 
         // NOTE: When a new option becomes available, we MUST remember to add
         //       it to the array of possibly unsupported options in webpsave() !
@@ -207,79 +325,45 @@ class Vips extends AbstractConverter
             $options['reduction_effort'] = $this->options['method'];
         }
 
-        return $options;
+        $possiblyUnsupported = [
+            'lossless' => '',
+            'alpha_q' => '(it was introduced in vips 8.4)',
+            'near_lossless' => '(it was introduced in vips 8.4)',
+            'smart_subsample' => '(its the vips equalent to the "sharp-yuv" option. It was introduced in vips 8.4)',
+            'reduction_effort' => '(its the vips equalent to the "method" option. It was introduced in vips 8.8.0)',
+            'preset' => '(it was introduced in vips 8.4)'
+        ];
+
+        return [$options, $possiblyUnsupported];
     }
 
     /**
-     * Save as webp, using vips extension.
+     * Create parameters for save
      *
-     * Tries to save image resource as webp, using the supplied options.
-     * Vips fails when a parameter is not supported, but we detect this and unset that parameter and try again
-     * (recursively call itself until there is no more of these kind of errors).
-     *
-     * @param  resource  $im  A vips image resource to save
-     * @throws  ConversionFailedException  if conversion fails.
+     * @return  array  the parameters as an array
      */
-    private function webpsave($im, $options)
+    private function createParamsForVipsSave()
     {
-        /** @scrutinizer ignore-call */ vips_error_buffer(); // clear error buffer
-        $result = /** @scrutinizer ignore-call */ vips_call('webpsave', $im, $this->destination, $options);
+        switch ($this->destinationType) {
+            case 'webp':
+                return $this->createParamsForVipsWebPSave();
+            case 'png':
+                // for all possibilities, run 'vips pngsave'
+                // we should at least support:
+                // - strip
+                // - interlace
+                // - Q (0-100)
+            case 'avif':
+                return [
+                    ['compression' => 'av1'],
+                    []
+                ];
+                //https://www.libvips.org/API/current/VipsForeignSave.html#vips-heifsave
 
-        //trigger_error('test-warning', E_USER_WARNING);
-        if ($result === -1) {
-            $message = /** @scrutinizer ignore-call */ vips_error_buffer();
-
-            $nameOfPropertyNotFound = '';
-            if (preg_match("#no property named .(.*).#", $message, $matches)) {
-                $nameOfPropertyNotFound = $matches[1];
-            } elseif (preg_match("#(.*)\\sunsupported$#", $message, $matches)) {
-                // Actually, I am not quite sure if this ever happens.
-                // I got a "near_lossless unsupported" error message in a build, but perhaps it rather a warning
-                if (in_array($matches[1], [
-                    'lossless',
-                    'alpha_q',
-                    'near_lossless',
-                    'smart_subsample',
-                    'reduction_effort',
-                    'preset'
-                ])) {
-                    $nameOfPropertyNotFound = $matches[1];
-                }
-            }
-
-            if ($nameOfPropertyNotFound != '') {
-                $msg = 'Note: Your version of vipslib does not support the "' .
-                    $nameOfPropertyNotFound . '" property';
-
-                switch ($nameOfPropertyNotFound) {
-                    case 'alpha_q':
-                        $msg .= ' (It was introduced in vips 8.4)';
-                        break;
-                    case 'near_lossless':
-                        $msg .= ' (It was introduced in vips 8.4)';
-                        break;
-                    case 'smart_subsample':
-                        $msg .= ' (its the vips equalent to the "sharp-yuv" option. It was introduced in vips 8.4)';
-                        break;
-                    case 'reduction_effort':
-                        $msg .= ' (its the vips equalent to the "method" option. It was introduced in vips 8.8.0)';
-                        break;
-                    case 'preset':
-                        $msg .= ' (It was introduced in vips 8.4)';
-                        break;
-                }
-                $msg .= '. The option is ignored.';
-
-
-                $this->logLn($msg, 'bold');
-
-                unset($options[$nameOfPropertyNotFound]);
-                $this->webpsave($im, $options);
-            } else {
-                throw new ConversionFailedException($message);
-            }
         }
+        return [[],[]];
     }
+
 
     /**
      * Convert, using vips extension.
@@ -303,7 +387,10 @@ class Vips extends AbstractConverter
         return;*/
 
         $im = $this->createImageResource();
-        $options = $this->createParamsForVipsWebPSave();
-        $this->webpsave($im, $options);
+
+        list($params, $possiblyUnsupported) = $this->createParamsForVipsSave();
+
+        $this->saveImage($im, $params, $possiblyUnsupported);
+
     }
 }

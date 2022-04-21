@@ -6,7 +6,11 @@ use ImageConvert\Convert\Converters\Vips;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperational\SystemRequirementsNotMetException;
 use ImageConvert\Convert\Exceptions\ConversionFailedException;
 use ImageConvert\Exceptions\InvalidInput\TargetNotFoundException;
+use ImageConvert\Loggers\BufferLogger;
+
 use ImageConvert\Tests\Convert\Exposers\VipsExposer;
+
+use ImageMimeTypeGuesser\ImageMimeTypeGuesser;
 
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +29,62 @@ class VipsTest extends TestCase
     public function getImagePath($image)
     {
         return $this->getImageFolder() . '/' . $image;
+    }
+
+    public function testConvertJpg2PNG()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.png');
+
+        $bufferLogger = new BufferLogger();
+        Vips::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertJpg2Webp()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.webp');
+
+        $bufferLogger = new BufferLogger();
+        Vips::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/webp', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    /*public function testConvertJpg2GIF()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.gif');
+
+        $bufferLogger = new BufferLogger();
+        Vips::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/gif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }*/
+
+
+    public function testConvertJpg2Avif()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.avif');
+
+        $bufferLogger = new BufferLogger();
+        Vips::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertAvif2Jpeg()
+    {
+        $source = self::getImagePath('avif-test.avif');
+        $destination = self::getImagePath('test.png.jpg');
+
+        $bufferLogger = new BufferLogger();
+        Vips::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
     }
 
     public function testConvert()
@@ -58,7 +118,7 @@ class VipsTest extends TestCase
         try {
             $vips = $this->createVips('test.png');
             $vips->checkOperationality();
-            $vips->checkConvertability();
+            $vips->checkConvertability('png', 'jpg');
         } catch (\Exception $e) {
             return false;
         }
@@ -76,7 +136,7 @@ class VipsTest extends TestCase
         ];
         $vipsExposer = $this->createVipsExposer('test.png', $options);
 
-        $vipsParams = $vipsExposer->createParamsForVipsWebPSave();
+        $vipsParams = $vipsExposer->createParamsForVipsWebPSave()[0];
 
         // Check some options that are straightforwardly copied
 
@@ -89,6 +149,7 @@ class VipsTest extends TestCase
         $this->assertSame($options['near-lossless'], $vipsParams['Q']);
     }
 
+/*
     public function testCreateParamsForVipsWebPSave2()
     {
         $options = [
@@ -103,7 +164,7 @@ class VipsTest extends TestCase
 
         // Some options are only set if they differ from default
         $this->assertFalse(isset($vipsParams['alpha_q']));
-    }
+    }*/
 
 
     public function testCreateImageResource1()
@@ -180,6 +241,7 @@ class VipsTest extends TestCase
     /**
      * @covers ::webpsave
      */
+     /*
     public function testWebpsave()
     {
         reset_pretending();
@@ -200,7 +262,7 @@ class VipsTest extends TestCase
         // - The converter must be able to ignore this without failing
         $options['non-existing-vips-option'] = true;
         $vipsExposer->webpsave($im, $options);
-    }
+    }*/
 
     /**
      * @covers ::createImageResource

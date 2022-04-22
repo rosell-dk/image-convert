@@ -10,7 +10,6 @@ use ImageConvert\Convert\Converters\ConverterTraits\ExecTrait;
 use ImageConvert\Convert\Converters\ConverterTraits\EncodingAutoTrait;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperational\SystemRequirementsNotMetException;
 use ImageConvert\Convert\Exceptions\ConversionFailedException;
-use ImageConvert\Helpers\BinaryDiscovery;
 use ImageConvert\Options\OptionFactory;
 
 //use ImageConvert\Convert\Exceptions\ConversionFailed\InvalidInput\TargetNotFoundException;
@@ -120,12 +119,6 @@ class ImageMagick extends AbstractConverter
         return false;
     }
 
-    // Check if webp delegate is installed
-    public function isWebPDelegateInstalled()
-    {
-        return $this->isDelegateInstalled('webp');
-    }
-
     /**
      * Check (general) operationality of imagack converter executable
      *
@@ -147,6 +140,22 @@ class ImageMagick extends AbstractConverter
         $this->versionNumber = (isset($matches[0]) ? $matches[0] : 'unknown');
     }
 
+    private function formatToLookFor($imageType)
+    {
+        switch ($imageType) {
+            case 'jpeg':
+            case 'png':
+            case 'webp':
+            case 'gif':
+                return strtoupper($imageType) . '\\*\s+' . strtoupper($imageType);
+                break;
+            case 'avif':
+                return 'AVIF* HEIC';
+                break;
+        }
+        throw new SystemRequirementsNotMetException($imageType . ' format is not supported');
+    }
+
     /**
      * Converters may override this for the purpose of performing checks on the concrete file.
      *
@@ -159,7 +168,45 @@ class ImageMagick extends AbstractConverter
      */
     public function checkConvertability($sourceType, $destinationType)
     {
-        $needsDelegates = ['webp'];
+
+        ExecWithFallback::exec($this->getPath() . ' -list format 2>&1', $output, $returnCode);
+
+        // Check source
+        $sourceSupported = false;
+        $lookFor = self::formatToLookFor($sourceType) . '\s*r';
+        foreach ($output as $line) {
+            //$this->logLn($line);
+            if (preg_match('#' . $lookFor . '#i', $line)) {
+                $sourceSupported = true;
+                break;
+            }
+        }
+        if (!$sourceSupported) {
+            throw new SystemRequirementsNotMetException($sourceType . ' format is not supported');
+        }
+
+        // Check destination
+        $destinationSupported = false;
+        $lookFor = self::formatToLookFor($destinationType) . '\s*.w';
+        foreach ($output as $line) {
+            //$this->logLn($line);
+            if (preg_match('#' . $lookFor . '#i', $line)) {
+                $destinationSupported = true;
+                break;
+            }
+        }
+        if (!$sourceSupported) {
+            throw new SystemRequirementsNotMetException($sourceType . ' format is not supported');
+        }
+
+/*
+
+        $needsDelegates = ['webp'];     // TODO: avif needs to check for 'heic' delegate
+
+        // TODO:
+        // This command seems to be what we are really looking for:
+        // magick -list format | grep HEIC
+        // Only question is: when was it introduced?
 
         if (in_array($sourceType, $needsDelegates)) {
             if (!$this->isDelegateInstalled($sourceType)) {
@@ -172,7 +219,7 @@ class ImageMagick extends AbstractConverter
                 throw new SystemRequirementsNotMetException($destinationType . ' delegate missing');
             }
         }
-
+*/
         /*
         Commented out the following test, because I have AVIF working in 6.9.11-60.
         So, which version was it actually introduced?
@@ -284,18 +331,22 @@ class ImageMagick extends AbstractConverter
         // could perhaps be promoted to a general option
 
         $commandArguments = [];
-        if ($this->isQualityDetectionRequiredButFailing()) {
-            // quality:auto was specified, but could not be determined.
-            // we cannot apply the max-quality logic, but we can provide auto quality
-            // simply by not specifying the quality option.
-        } else {
-            $commandArguments[] = '-quality ' . escapeshellarg($this->getCalculatedQuality());
-        }
 
         $options = $this->options;
 
-        if ($this->destinationType == 'webp') {
-            $commandArguments = $this->prependWebPCommandLineArguments($commandArguments);
+        switch ($this->destinationType) {
+            case 'webp':
+                if ($this->isQualityDetectionRequiredButFailing()) {
+                    // quality:auto was specified, but could not be determined.
+                    // we cannot apply the max-quality logic, but we can provide auto quality
+                    // simply by not specifying the quality option.
+                } else {
+                    $commandArguments[] = '-quality ' . escapeshellarg($this->getCalculatedQuality());
+                }
+                $commandArguments = $this->prependWebPCommandLineArguments($commandArguments);
+                break;
+            case 'avif':
+                $commandArguments[] = '-quality ' . escapeshellarg($this->options['quality']);
         }
 
         $commandArguments[] = escapeshellarg($this->source);

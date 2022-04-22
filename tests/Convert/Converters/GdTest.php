@@ -3,6 +3,9 @@ namespace ImageConvert\Tests\Convert\Converters;
 
 
 use ImageConvert\Tests\Convert\Exposers\GdExposer;
+
+use ImageConvert\ImageConvert;
+
 use ImageConvert\Convert\Converters\Gd;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperational\SystemRequirementsNotMetException;
 use ImageConvert\Convert\Exceptions\ConversionFailedException;
@@ -31,6 +34,19 @@ class GdTest extends TestCase
         ConverterTestHelper::runAllConvertTests($this, 'Gd');
     }
 
+    public function testGlobalConvert()
+    {
+        $source = self::getImagePath('test.png');
+        $destination = self::getImagePath('test.png.avif');
+        $bufferLogger = new BufferLogger();
+        $result = ImageConvert::convert($source, $destination, [
+            'converters' => ['cwebp', 'ewww', 'ffmpeg', 'gmagick', 'graphicsmagick', 'imagemagick', 'imagick', 'gd'],
+            'quality' => 20,
+        ], $bufferLogger);
+        echo $bufferLogger->getText("\n");
+        $this->assertFalse(false);
+    }
+
     public function testConvertPng2Jpg()
     {
         $source = self::getImagePath('test.png');
@@ -55,7 +71,7 @@ class GdTest extends TestCase
             $bufferLogger
         );
         $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
-        echo $bufferLogger->getText("\n");
+        //echo $bufferLogger->getText("\n");
     }
 
     public function testConvertJpg2Webp()

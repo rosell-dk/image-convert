@@ -3,6 +3,7 @@
 namespace ImageConvert\Convert\Converters;
 
 use ImageConvert\Convert\ConverterFactory;
+use ImageConvert\Convert\QuickCheck;
 use ImageConvert\Convert\Converters\AbstractConverter;
 use ImageConvert\Convert\Exceptions\ConversionFailedException;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperationalException;
@@ -216,6 +217,13 @@ class Stack extends AbstractConverter
                     $converterOptions = $options['converter-options'][$converterId];
                 }
             }
+
+            $quickChk = QuickCheck::check($converterId, $this->sourceType, $this->destinationType);
+            if (gettype($quickChk) == 'string') {
+                $this->logLn('skipping ' . $converterId . ' (' . $quickChk . ')');
+                continue;
+            }
+
             $converterOptions = array_merge($defaultConverterOptions, $converterOptions);
             /*
             if ($converterId != 'stack') {

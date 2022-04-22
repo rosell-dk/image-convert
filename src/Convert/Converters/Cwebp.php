@@ -236,6 +236,22 @@ class Cwebp extends AbstractConverter
         }
     }
 
+    /**
+     * Check if converter supports converting between the two formats
+     *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
+     * @throws SystemRequirementsNotMetException  if ffmpeg does not support image type
+     */
+    public function checkConvertability($sourceType, $destinationType)
+    {
+        if ($destinationType != 'webp') {
+            throw new SystemRequirementsNotMetException('cwebp only supports converting to webp!');
+        }
+    }
+
+
     private function executeBinary($binary, $commandOptions, $useNice)
     {
         //$version = $this->detectVersion($binary);

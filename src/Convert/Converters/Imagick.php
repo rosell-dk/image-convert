@@ -162,38 +162,40 @@ class Imagick extends AbstractConverter
                     );
                 }
             }
-        }
 
+            if ($options['metadata'] == 'none') {
+                // To strip metadata, we need to use the stripImage() method. However, that method does not only remove
+                // metadata, but color profiles as well. We want to keep the color profiles, so we grab it now to be able
+                // to restore it. (Thanks, Max Eremin: https://www.php.net/manual/en/imagick.stripimage.php#120380)
 
-        if ($options['metadata'] == 'none') {
-            // To strip metadata, we need to use the stripImage() method. However, that method does not only remove
-            // metadata, but color profiles as well. We want to keep the color profiles, so we grab it now to be able
-            // to restore it. (Thanks, Max Eremin: https://www.php.net/manual/en/imagick.stripimage.php#120380)
+                // Grab color profile (to be able to restore them)
+                $profiles = $im->getImageProfiles("icc", true);
 
-            // Grab color profile (to be able to restore them)
-            $profiles = $im->getImageProfiles("icc", true);
+                // Strip metadata (and color profiles)
+                $im->stripImage();
 
-            // Strip metadata (and color profiles)
-            $im->stripImage();
+                // Restore color profiles
+                if (!empty($profiles)) {
+                    $im->profileImage("icc", $profiles['icc']);
+                }
+            }
 
-            // Restore color profiles
-            if (!empty($profiles)) {
-                $im->profileImage("icc", $profiles['icc']);
+            if ($this->isQualityDetectionRequiredButFailing()) {
+                // Luckily imagick is a big boy, and automatically converts with same quality as
+                // source, when the quality isn't set.
+                // So we simply do not set quality.
+                // This actually kills the max-quality functionality. But I deem that this is more important
+                // because setting image quality to something higher than source generates bigger files,
+                // but gets you no extra quality. When failing to limit quality, you at least get something
+                // out of it
+                $this->logLn('Converting without setting quality in order to achieve auto quality');
+            } else {
+                $im->setImageCompressionQuality($this->getCalculatedQuality());
             }
         }
 
-        if ($this->isQualityDetectionRequiredButFailing()) {
-            // Luckily imagick is a big boy, and automatically converts with same quality as
-            // source, when the quality isn't set.
-            // So we simply do not set quality.
-            // This actually kills the max-quality functionality. But I deem that this is more important
-            // because setting image quality to something higher than source generates bigger files,
-            // but gets you no extra quality. When failing to limit quality, you at least get something
-            // out of it
-            $this->logLn('Converting without setting quality in order to achieve auto quality');
-        } else {
-            $im->setImageCompressionQuality($this->getCalculatedQuality());
-        }
+
+
 
         // https://stackoverflow.com/questions/29171248/php-imagick-jpeg-optimization
         // setImageFormat

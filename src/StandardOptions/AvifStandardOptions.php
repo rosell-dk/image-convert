@@ -32,8 +32,7 @@ class AvifStandardOptions
         return OptionFactory::createOptions([
             ['quality', 'int', [
                 'title' => 'Quality',
-                'description' =>
-                    'Q 30 gives about the same quality as JPEG Q 75.' .
+                'description' => 'Q 30 gives about the same quality as JPEG Q 75.',
                 'default' => 30,
                 'minimum' => 0,
                 'maximum' => 100,

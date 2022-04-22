@@ -92,8 +92,25 @@ class FFMpeg extends AbstractConverter
                 'ffmpeg is not installed (cannot execute: "' . $this->getPath() . '")'
             );
         }
-        if (!$this->isWebPDelegateInstalled()) {
-            throw new SystemRequirementsNotMetException('ffmpeg was compiled without libwebp');
+    }
+
+    /**
+     * Check if converter supports converting between the two formats
+     *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
+     * @throws SystemRequirementsNotMetException  if ffmpeg does not support image type
+     */
+    public function checkConvertability($sourceType, $destinationType)
+    {
+        if (($sourceType == 'webp') || ($destinationType == 'webp')) {
+            if (!$this->isWebPDelegateInstalled()) {
+                throw new SystemRequirementsNotMetException('ffmpeg was compiled without libwebp');
+            }
+        }
+        if ($destinationType != 'webp') {
+            throw new SystemRequirementsNotMetException('currently only supports converting to webp');
         }
     }
 

@@ -243,6 +243,21 @@ class Wpc extends AbstractConverter
         $this->checkOperationalityForCurlTrait();
     }
 
+    /**
+     * Check if converter supports converting between the two formats
+     *
+     * @param  string $sourceType  (last part of mime type, ie "jpeg")
+     * @param  string $destinationType
+     * @return void
+     * @throws SystemRequirementsNotMetException  if Gmagick does not support image type
+     */
+    public function checkConvertability($sourceType, $destinationType)
+    {
+        if ($destinationType != 'webp') {
+            throw new SystemRequirementsNotMetException('the converter currently only supports converting to webp');
+        }
+    }
+    
     /*
     public function checkConvertability()
     {

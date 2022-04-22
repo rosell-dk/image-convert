@@ -66,6 +66,12 @@ class Gmagick extends AbstractConverter
      */
     public function checkConvertability($sourceType, $destinationType)
     {
+
+        if ($destinationType != 'webp') {
+            throw new SystemRequirementsNotMetException('the converter currently only supports converting to webp');
+        }
+
+        /*
         $im = new \Gmagick();
         $mimeType = $this->getMimeTypeOfSource();
         switch ($mimeType) {
@@ -83,7 +89,7 @@ class Gmagick extends AbstractConverter
                     );
                 }
                 break;
-        }
+        }*/
     }
 
     // Although this method is public, do not call directly.

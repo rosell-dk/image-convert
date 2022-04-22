@@ -360,16 +360,26 @@ class Gd extends AbstractConverter
         try {
             switch ($this->destinationType) {
                 case 'png':
-                    $success = imagepng($image, null, $q);
+                    $success = imagepng($image, null, $this->options['compression']);
                     break;
                 case 'jpeg':
                     $success = imagejpeg($image, null, $q);
                     break;
                 case 'gif':
-                    $success = imagegif($image, null, $q);
+                    $success = imagegif($image);
                     break;
                 case 'avif':
-                    $success = imageavif($image, null, $q);
+                    // quality is optional, and ranges from 0 (worst quality, smaller file) to 100 (best quality, larger file).
+                    // If -1 is provided, the default value 30 is used.
+
+                    // We do not use auto quality (yet). It would involve mapping between jpeg quality and avif quality
+                    $quality = $this->options['quality'];
+
+                    // speed is optional, and ranges from 0 (slow, smaller file) to 10 (fast, larger file).
+                    //    If -1 is provided, the default value 6 is used.
+                    $speed = -1;
+
+                    $success = imageavif($image, null, $quality, $speed);
                     break;
                 case 'webp':
                     // Beware: This call can throw FATAL on windows (cannot be catched)

@@ -14,6 +14,7 @@ use ImageConvert\Options\OptionFactory;
 use ImageConvert\StandardOptions\GlobalStandardOptions;
 use ImageConvert\StandardOptions\PNGStandardOptions;
 use ImageConvert\StandardOptions\WebPStandardOptions;
+use ImageConvert\StandardOptions\AvifStandardOptions;
 
 /**
  * Trait for handling options
@@ -49,6 +50,8 @@ trait OptionsTrait
                 return WebPStandardOptions::getWebPStandardOptions($sourceImageType);
             case 'png':
                 return PNGStandardOptions::getPNGStandardOptions($sourceImageType);
+            case 'avif':
+                return AvifStandardOptions::getAvifStandardOptions($sourceImageType);
         }
         return [];
     }

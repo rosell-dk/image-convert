@@ -404,7 +404,7 @@ class Vips extends AbstractConverter
                 return [
                     [
                         'compression' => 'av1',  // av1 for avif
-                        'Q' => 85,
+                        'Q' => $this->options['quality'],
                         'lossless' => false,
                         'speed' => 5,  // CPU effort (0-8). Default: 5
                         'effort' => 9,   // 0 is fastest, 9 is slowest. Default: 4

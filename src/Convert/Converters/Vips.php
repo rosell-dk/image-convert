@@ -75,7 +75,6 @@ class Vips extends AbstractConverter
                 'the function "vips_error_buffer" is not available.'
             );
         }
-
     }
 
     /**
@@ -229,7 +228,7 @@ class Vips extends AbstractConverter
 
         //trigger_error('test-warning', E_USER_WARNING);
         if ($result === -1) {
-            $message = /** @scrutinizer ignore-call */ vips_error_buffer();
+            $message = vips_error_buffer();
 
             $nameOfPropertyNotFound = '';
             if (preg_match("#no property named .(.*).#", $message, $matches)) {
@@ -327,11 +326,11 @@ class Vips extends AbstractConverter
 
         $possiblyUnsupported = [
             'lossless' => '',
-            'alpha_q' => '(it was introduced in vips 8.4)',
-            'near_lossless' => '(it was introduced in vips 8.4)',
-            'smart_subsample' => '(its the vips equalent to the "sharp-yuv" option. It was introduced in vips 8.4)',
-            'reduction_effort' => '(its the vips equalent to the "method" option. It was introduced in vips 8.8.0)',
-            'preset' => '(it was introduced in vips 8.4)'
+            'alpha_q' => '(it was introduced in libvips 8.4)',
+            'near_lossless' => '(it was introduced in libvips 8.4)',
+            'smart_subsample' => '(its the vips equalent to the "sharp-yuv" option. It was introduced in libvips 8.4)',
+            'reduction_effort' => '(its the vips equalent to the "method" option. It was introduced in libvips 8.8.0)',
+            'preset' => '(it was introduced in libvips 8.4)'
         ];
 
         return [$options, $possiblyUnsupported];
@@ -344,6 +343,24 @@ class Vips extends AbstractConverter
      */
     private function createParamsForVipsSave()
     {
+        // TODO:
+        // Find out which versions the individual options was introduced.
+        // I can dig into old docs here:
+        // 7.40.11: https://www.manpagez.com/html/libvips/libvips-7.40.11/VipsForeignSave.php
+        // 8.0.2:   https://www.manpagez.com/html/libvips/libvips-8.0.2/VipsForeignSave.php
+        // 8.1.0:   https://www.manpagez.com/html/libvips/libvips-8.1.0/libvips-VipsForeignSave.php
+        // 8.2.1:   https://www.manpagez.com/html/libvips/libvips-8.2.1/libvips-VipsForeignSave.php#vips-pngsave
+        // 8.3.0:   https://www.manpagez.com/html/libvips/libvips-8.3.0/libvips-VipsForeignSave.php
+        // 8.4.1:   https://www.manpagez.com/html/libvips/libvips-8.4.1/VipsForeignSave.php
+        // 8.5.6:   https://www.manpagez.com/html/libvips/libvips-8.5.6/VipsForeignSave.php
+        // 8.6.0:   https://www.manpagez.com/html/libvips/libvips-8.6.0/VipsForeignSave.php
+        // 8.6.5:   https://www.manpagez.com/html/libvips/libvips-8.6.5/VipsForeignSave.php#vips-pngsave
+        // 8.7.0:   https://www.manpagez.com/html/libvips/libvips-8.7.0/VipsForeignSave.php
+        // 8.8.2:   https://www.manpagez.com/html/libvips/libvips-8.8.2/VipsForeignSave.php
+        // 8.10.2:  https://www.manpagez.com/html/libvips/libvips-8.10.2/VipsForeignSave.php
+        // 8.11.2:  https://www.manpagez.com/html/libvips/libvips-8.11.2/VipsForeignSave.php#vips-pngsave
+        // current: https://www.libvips.org/API/current/VipsForeignSave.html
+
         switch ($this->destinationType) {
             case 'webp':
                 return $this->createParamsForVipsWebPSave();
@@ -353,13 +370,47 @@ class Vips extends AbstractConverter
                 // - strip
                 // - interlace
                 // - Q (0-100)
-            case 'avif':
                 return [
-                    ['compression' => 'av1'],
+                    [
+                        'compression' => $this->options['compression'],     // Compression factor (0-9). Ddefault: 6
+                        'interlace' => $this->options['interlace'],
+                        // 'profile' =>
+                        // 'filter' =>
+                        'palette' => false,
+                        'Q' => 100,      // Quantisation quality (0-100). Default: 100
+                        'dither' => $this->options['dither'],   // 0-1. Default: 1
+                        //'bitdepth' => 8,  // Beware: fails with 0, which is supposed to be default
+                        'strip' => false,  // Default: false
+                        // 'background' =>
+                        // 'page-height' =>
+                        'effort' => 9,   // quantisation CPU effort. 0 is fastest, 9 is slowest. Default: 4
+                    ],
+                    [
+                        'compression' => '',    // 7.40.11
+                        'interlace' => '',      // 7.40.11
+                        'profile' => '',        // 7.40.11
+                        'filter' => '',         // 8.0.2
+                        'palette' => '',        // 8.7.0
+                        'colors' => '',         // 8.7.0
+                        'Q' => '',              // 8.7.0
+                        'dither' => '',         // 8.7.0
+                        'bitdepth' => '',       // 8.10.2
+                        'strip' => '',
+                        'effort' => '',         // 8.12.0
+                    ],
+                ];
+            case 'avif':
+                //https://www.libvips.org/API/current/VipsForeignSave.html#vips-heifsave
+                return [
+                    [
+                        'compression' => 'av1',  // av1 for avif
+                        'Q' => 85,
+                        'lossless' => false,
+                        'speed' => 5,  // CPU effort (0-8). Default: 5
+                        'effort' => 9,   // 0 is fastest, 9 is slowest. Default: 4
+                    ],
                     []
                 ];
-                //https://www.libvips.org/API/current/VipsForeignSave.html#vips-heifsave
-
         }
         return [[],[]];
     }
@@ -392,6 +443,5 @@ class Vips extends AbstractConverter
         $this->logLn('vips params: ' . print_r($params, true));
 
         $this->saveImage($im, $params, $possiblyUnsupported);
-
     }
 }

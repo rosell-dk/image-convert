@@ -37,9 +37,15 @@ class VipsTest extends TestCase
         $destination = self::getImagePath('test.jpg.png');
 
         $bufferLogger = new BufferLogger();
-        Vips::convert($source, $destination, [], $bufferLogger);
+        Vips::convert($source, $destination, [
+                'compression' => 1,
+                'interlace' => true,
+                'dither' => 1,
+            ],
+            $bufferLogger
+        );
         $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
-        //echo $bufferLogger->getText("\n");
+        echo $bufferLogger->getText("\n");
     }
 
     public function testConvertJpg2Webp()
@@ -50,7 +56,7 @@ class VipsTest extends TestCase
         $bufferLogger = new BufferLogger();
         Vips::convert($source, $destination, [
                 'quality' => 80,
-                'near-lossless' => 75,
+                'near-lossless' => 77,
                 'method' => 2,
                 'encoding' => 'lossless'
             ],
@@ -60,7 +66,8 @@ class VipsTest extends TestCase
         $log = $bufferLogger->getText("\n");
         //echo $log;
         $this->assertTrue(strpos($log, '[reduction_effort] => 2') > 0);
-        $this->assertTrue(strpos($log, '[near_lossless] => 75') > 0, 'near_lossless was expected to be 75');
+        $this->assertTrue(strpos($log, '[near_lossless] => 1') > 0, 'near_lossless was expected to be true');
+        $this->assertTrue(strpos($log, '[Q] => 77') > 0, 'Q was expected to be 75 (the value of near-lossless)');
 
     }
 

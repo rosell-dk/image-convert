@@ -51,12 +51,6 @@ class Gd extends AbstractConverter
             throw new SystemRequirementsNotMetException('Required Gd extension is not available.');
         }
 
-        if (!function_exists('imagewebp')) {
-            throw new SystemRequirementsNotMetException(
-                'Gd has been compiled without webp support.'
-            );
-        }
-
         if (!function_exists('imagepalettetotruecolor')) {
             if (!self::functionsExist([
                 'imagecreatetruecolor', 'imagealphablending', 'imagecolorallocatealpha',
@@ -64,7 +58,7 @@ class Gd extends AbstractConverter
             ])) {
                 throw new SystemRequirementsNotMetException(
                     'Gd cannot convert palette color images to RGB. ' .
-                    'Even though it would be possible to convert RGB images to webp with Gd, ' .
+                    'Even though it converting RGB would work fine, ' .
                     'we refuse to do it. A partial working converter causes more trouble than ' .
                     'a non-working. To make this converter work, you need the imagepalettetotruecolor() ' .
                     'function to be enabled on your system.'
@@ -83,23 +77,28 @@ class Gd extends AbstractConverter
      */
     public function checkConvertability($sourceType, $destinationType)
     {
-        $mimeType = $this->getMimeTypeOfSource();
-        switch ($mimeType) {
-            case 'image/png':
-                if (!function_exists('imagecreatefrompng')) {
-                    throw new SystemRequirementsNotMetException(
-                        'Gd has been compiled without PNG support and can therefore not convert this PNG image.'
-                    );
-                }
-                break;
-
-            case 'image/jpeg':
-                if (!function_exists('imagecreatefromjpeg')) {
-                    throw new SystemRequirementsNotMetException(
-                        'Gd has been compiled without Jpeg support and can therefore not convert this jpeg image.'
-                    );
-                }
+        foreach ([$sourceType, $destinationType] as $imageType) {
+            if (!in_array($imageType, ['png', 'jpeg', 'webp', 'avif', 'gif'])) {
+                // how about: bmp, xbm, xpm, wbmp ?
+                throw new SystemRequirementsNotMetException(
+                    'Gd does not support ' . strtoupper($imageType) . ' images.'
+                );
+            }
         }
+
+        if (!function_exists('imagecreatefrom' . $sourceType)) {
+            throw new SystemRequirementsNotMetException(
+                'Gd has been compiled without ' . strtoupper($sourceType) .
+                    ' support and can therefore not convert this ' . strtoupper($sourceType) . ' image.'
+            );
+        }
+
+        if (!function_exists('image' . $destinationType)) {
+            throw new SystemRequirementsNotMetException(
+                'Gd has been compiled without ' . strtoupper($destinationType) . ' support.'
+            );
+        }
+
     }
 
     /**
@@ -309,7 +308,7 @@ class Gd extends AbstractConverter
         return true;
     }
 
-    protected function errorHandlerWhileCreatingWebP($errno, $errstr, $errfile, $errline)
+    protected function errorHandlerWhileConverting($errno, $errstr, $errfile, $errline)
     {
         $this->errorNumberWhileCreating = $errno;
         $this->errorMessageWhileCreating = $errstr . ' in ' . $errfile . ', line ' . $errline .
@@ -345,7 +344,7 @@ class Gd extends AbstractConverter
         // --------------------------------- (start of danger zone)
 
         $addedZeroPadding = false;
-        set_error_handler(array($this, "errorHandlerWhileCreatingWebP"));
+        set_error_handler(array($this, "errorHandlerWhileConverting"));
 
         // This line may trigger log, so we need to do it BEFORE ob_start() !
         $q = $this->getCalculatedQuality();
@@ -359,9 +358,25 @@ class Gd extends AbstractConverter
         $success = false;
 
         try {
-            // Beware: This call can throw FATAL on windows (cannot be catched)
-            // This for example happens on palette images
-            $success = imagewebp($image, null, $q);
+            switch ($this->destinationType) {
+                case 'png':
+                    $success = imagepng($image, null, $q);
+                    break;
+                case 'jpeg':
+                    $success = imagejpeg($image, null, $q);
+                    break;
+                case 'gif':
+                    $success = imagegif($image, null, $q);
+                    break;
+                case 'avif':
+                    $success = imageavif($image, null, $q);
+                    break;
+                case 'webp':
+                    // Beware: This call can throw FATAL on windows (cannot be catched)
+                    // This for example happens on palette images
+                    $success = imagewebp($image, null, $q);
+                    break;
+            }
         } catch (\Exception $e) {
             $error = $e;
         } catch (\Throwable $e) {
@@ -378,17 +393,18 @@ class Gd extends AbstractConverter
             ob_end_clean();
             restore_error_handler();
             throw new ConversionFailedException(
-                'Failed creating image. Call to imagewebp() failed.',
+                'Failed creating image. Call to image' . $this->destinationType . ' failed.',
                 $this->errorMessageWhileCreating
             );
         }
 
-
         // The following hack solves an `imagewebp` bug
         // See https://stackoverflow.com/questions/30078090/imagewebp-php-creates-corrupted-webp-files
-        if (ob_get_length() % 2 == 1) {
-            echo "\0";
-            $addedZeroPadding = true;
+        if ($this->destinationType == 'webp') {
+            if (ob_get_length() % 2 == 1) {
+                echo "\0";
+                $addedZeroPadding = true;
+            }
         }
         $output = ob_get_clean();
         restore_error_handler();
@@ -508,7 +524,12 @@ class Gd extends AbstractConverter
             }
         }
 
-        if ($this->getMimeTypeOfSource() == 'image/png') {
+
+        if (($this->sourceType == 'png') && ($this->destinationType == 'webp')) {
+
+            // Try to set alpha blending
+            $this->trySettingAlphaBlending($image);
+
             if (function_exists('version_compare')) {
                 if (version_compare($versionString, "2.1.1", "<=")) {
                     $this->logLn(
@@ -526,8 +547,6 @@ class Gd extends AbstractConverter
                 }
             }
 
-            // Try to set alpha blending
-            $this->trySettingAlphaBlending($image);
         }
 
         // Try to convert it to webp

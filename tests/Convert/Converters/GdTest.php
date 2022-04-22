@@ -6,6 +6,9 @@ use ImageConvert\Tests\Convert\Exposers\GdExposer;
 use ImageConvert\Convert\Converters\Gd;
 use ImageConvert\Convert\Exceptions\ConversionFailed\ConverterNotOperational\SystemRequirementsNotMetException;
 use ImageConvert\Convert\Exceptions\ConversionFailedException;
+use ImageConvert\Loggers\BufferLogger;
+
+use ImageMimeTypeGuesser\ImageMimeTypeGuesser;
 
 use PHPUnit\Framework\TestCase;
 
@@ -28,6 +31,87 @@ class GdTest extends TestCase
         ConverterTestHelper::runAllConvertTests($this, 'Gd');
     }
 
+    public function testConvertPng2Jpg()
+    {
+        $source = self::getImagePath('test.png');
+        $destination = self::getImagePath('test.png.jpg');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+    }
+
+    public function testConvertJpg2PNG()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.png');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [
+                'compression' => 1,
+                'interlace' => true,
+                'dither' => 1,
+            ],
+            $bufferLogger
+        );
+        $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
+        echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertJpg2Webp()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.webp');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [
+                'quality' => 80,
+                'near-lossless' => 77,
+                'method' => 2,
+                'encoding' => 'lossless'
+            ],
+            $bufferLogger
+        );
+        $this->assertEquals('image/webp', ImageMimeTypeGuesser::detect($destination));
+        $log = $bufferLogger->getText("\n");
+        //echo $log;
+
+    }
+
+    /*public function testConvertJpg2GIF()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.gif');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/gif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }*/
+
+    /*
+    public function testConvertJpg2Avif()
+    {
+        $source = self::getImagePath('test.jpg');
+        $destination = self::getImagePath('test.jpg.avif');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }
+
+    public function testConvertAvif2Jpeg()
+    {
+        $source = self::getImagePath('avif-test.avif');
+        $destination = self::getImagePath('test.png.jpg');
+
+        $bufferLogger = new BufferLogger();
+        Gd::convert($source, $destination, [], $bufferLogger);
+        $this->assertEquals('image/jpeg', ImageMimeTypeGuesser::detect($destination));
+        //echo $bufferLogger->getText("\n");
+    }*/
+
     private function createGd($src)
     {
         $source = self::getImagePath($src);
@@ -48,6 +132,7 @@ class GdTest extends TestCase
     }
 
     // pretend imagewebp is missing
+    /*
     public function testNotOperational1()
     {
         global $pretend;
@@ -59,7 +144,7 @@ class GdTest extends TestCase
         $this->expectException(SystemRequirementsNotMetException::class);
         $gd->checkOperationality();
     }
-
+*/
 
     // pretend gd is not loaded
     public function testNotOperational2()
@@ -112,7 +197,7 @@ class GdTest extends TestCase
 
         $pretend['functionsNotExisting'] = ['imagecreatefromjpeg'];
         $this->expectException(SystemRequirementsNotMetException::class);
-        $gd->checkConvertability('png', 'webp');
+        $gd->checkConvertability('jpeg', 'webp');
 
         $pretend['functionsNotExisting'] = [];
     }

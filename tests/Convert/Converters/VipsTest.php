@@ -45,7 +45,7 @@ class VipsTest extends TestCase
             $bufferLogger
         );
         $this->assertEquals('image/png', ImageMimeTypeGuesser::detect($destination));
-        echo $bufferLogger->getText("\n");
+        //echo $bufferLogger->getText("\n");
     }
 
     public function testConvertJpg2Webp()

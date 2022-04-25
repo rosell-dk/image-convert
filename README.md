@@ -1,15 +1,43 @@
+*Convert images with PHP*
 
-Work in progress....
+This library enables you to do images conversion with PHP. It supports an abundance of methods for converting and automatically selects the most capable of these that is available on the system.
 
-This library will be for converting images (changing formats) in/from PHP.
-Ie jpeg->webp, png->jpeg, jpeg->avif etc.
+The library can convert using the following methods:
+- using [Imagick extension](https://github.com/Imagick/imagick)
+- executing [imagemagick](https://imagemagick.org/index.php) binary using an `exec` call
+- using [Vips PHP extension](https://github.com/libvips/php-vips-ext))
+- executing [ffmpeg](https://ffmpeg.org/) binary using an `exec` call
+- using [Gmagick extension](https://www.php.net/manual/en/book.gmagick.php)
+- executing [graphicsmagick](http://www.graphicsmagick.org/) binary using an `exec` call
+- using the [Gd extension](https://www.php.net/manual/en/book.image.php))
+- executing [cwebp](https://developers.google.com/speed/webp/docs/cwebp) binary using an `exec` call (only used for converting images to webp)
+- using the [ewww](https://ewww.io/plans/) cloud converter
 
-I have started off by copying webp-convert. This is the base, which I am going to modify into a general image conversion library
+## Installation
+Require the library with *Composer*, like this:
 
+```text
+composer require rosell-dk/image-convert
+```
 
+## Converting images
+Here is a minimal example of converting using the *ImageConvert::convert* method:
 
-Notes to self:
-For jpeg xl, I can look at this library: https://github.com/joppuyo/jpeg-xl-encode
+```php
+// Initialise your autoloader (this example is using Composer)
+require 'vendor/autoload.php';
+
+use ImageConvert\ImageConvert;
+
+$source = __DIR__ . '/logo.jpg';
+$destination = $source . '.webp';
+$options = [];
+ImageConvert::convert($source, $destination, $options);
+```
+
+## Work in progress...
+
+The library is under development. It works, but it is not production-ready.
 
 
 ## Do you like what I do?

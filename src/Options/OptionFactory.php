@@ -9,7 +9,6 @@ use ImageConvert\Options\IntegerOrNullOption;
 use ImageConvert\Options\MetadataOption;
 use ImageConvert\Options\StringOption;
 use ImageConvert\Options\SensitiveStringOption;
-use ImageConvert\Options\QualityOption;
 
 /**
  * Abstract option class
@@ -33,11 +32,7 @@ class OptionFactory
                 if (isset($def['allow-null']) && $def['allow-null']) {
                     $option = new IntegerOrNullOption($optionName, $def['default'], $minValue, $maxValue);
                 } else {
-                    if ($optionName == 'quality') {
-                        $option = new QualityOption($optionName, $def['default']);
-                    } else {
-                        $option = new IntegerOption($optionName, $def['default'], $minValue, $maxValue);
-                    }
+                    $option = new IntegerOption($optionName, $def['default'], $minValue, $maxValue);
                 }
                 break;
 

@@ -22,7 +22,7 @@ class WebPStandardOptions
      *
      *  @return  array  Array of options
      */
-    public function getWebPStandardOptions($sourceImageType)
+    public static function getWebPStandardOptions($sourceImageType)
     {
         $isPng = ($sourceImageType == 'png');
 

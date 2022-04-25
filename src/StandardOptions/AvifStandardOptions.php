@@ -22,7 +22,7 @@ class AvifStandardOptions
      *
      *  @return  array  Array of options
      */
-    public function getAvifStandardOptions($sourceImageType)
+    public static function getAvifStandardOptions($sourceImageType)
     {
         $isPng = ($sourceImageType == 'png');
 
@@ -38,6 +38,7 @@ class AvifStandardOptions
             - cavif: https://github.com/kornelski/cavif-rs
             - avifenc:  type "avifenc", or see here: https://web.dev/compress-images-avif/
             - avifcli: https://github.com/lovell/avif-cli
+            - gd: https://php.watch/versions/8.1/gd-avif#imageavif
 
             */
             /*
@@ -50,6 +51,7 @@ class AvifStandardOptions
             - avifenc uses
             - avif-cli uses "quality" (1-100), default: 50
             - squoosh-cli
+            - gd uses "quality" (from -1 to 100). -1 means "reuse libavif default". 0 is worst
 
             vips for some reason generates a little bit larger avif than imagemagick, but its around the same for all
             quality settings, so they probably have the same view of what quality means
@@ -74,6 +76,12 @@ class AvifStandardOptions
             - Vips uses "effort", but used to use "speed" (it seems they are related (but opposite)
             - ImageMagick uses "speed"
             - Squoosh.app uses "effort (0-10)"
+            - cavif uses "speed" (0-10)
+
+            cavif writes this about speed:
+            Encoding speed between 1 (best, but slowest) and 10 (fastest, but a blurry mess),
+             the default value is 4. Speeds 1 and 2 are unbelievably slow, but make files ~3-5% smaller.
+             Speeds 7 and above degrade compression significantly, and are not recommended.
 
             ['speed', 'int', [
                 'title' => 'Speed',

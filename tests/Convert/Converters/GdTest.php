@@ -43,7 +43,7 @@ class GdTest extends TestCase
             'converters' => ['cwebp', 'ewww', 'ffmpeg', 'gmagick', 'graphicsmagick', 'imagemagick', 'imagick', 'gd'],
             'quality' => 20,
         ], $bufferLogger);
-        echo $bufferLogger->getText("\n");
+        //echo $bufferLogger->getText("\n");
         $this->assertFalse(false);
     }
 
@@ -105,9 +105,12 @@ class GdTest extends TestCase
         //echo $bufferLogger->getText("\n");
     }*/
 
-    /*
+
     public function testConvertJpg2Avif()
     {
+        // To install Gd with avif:
+        // https://php.watch/versions/8.1/gd-avif#compile
+
         $source = self::getImagePath('test.jpg');
         $destination = self::getImagePath('test.jpg.avif');
 
@@ -116,6 +119,7 @@ class GdTest extends TestCase
         $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
         //echo $bufferLogger->getText("\n");
     }
+    /*
 
     public function testConvertAvif2Jpeg()
     {

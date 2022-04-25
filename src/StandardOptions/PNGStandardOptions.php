@@ -22,7 +22,7 @@ class PNGStandardOptions
      *
      *  @return  array  Array of options
      */
-    public function getPNGStandardOptions($sourceImageType)
+    public static function getPNGStandardOptions($sourceImageType)
     {
         $isPng = ($sourceImageType == 'png');
 

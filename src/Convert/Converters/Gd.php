@@ -93,12 +93,21 @@ class Gd extends AbstractConverter
             );
         }
 
+        if ($destinationType == 'avif') {
+            if (version_compare(phpversion(), '8.1', '<')) {
+                throw new SystemRequirementsNotMetException(
+                    'avif requires PHP 8.1 for Gd'
+                );
+            }
+        }
+
         if (!function_exists('image' . $destinationType)) {
             throw new SystemRequirementsNotMetException(
                 'Gd has been compiled without ' . strtoupper($destinationType) . ' support.'
             );
         }
 
+        // PS: could alternatively use gd_info()
     }
 
     /**
@@ -207,8 +216,8 @@ class Gd extends AbstractConverter
     {
         $mimeType = $this->getMimeTypeOfSource();
 
-        switch ($mimeType) {
-            case 'image/png':
+        switch ($this->sourceType) {
+            case 'png':
                 $image = imagecreatefrompng($this->source);
                 if ($image === false) {
                     throw new ConversionFailedException(
@@ -217,11 +226,38 @@ class Gd extends AbstractConverter
                 }
                 return $image;
 
-            case 'image/jpeg':
+            case 'jpeg':
                 $image = imagecreatefromjpeg($this->source);
                 if ($image === false) {
                     throw new ConversionFailedException(
                         'Gd failed when trying to load/create image (imagecreatefromjpeg() failed)'
+                    );
+                }
+                return $image;
+
+            case 'gif':
+                $image = imagecreatefromgif($this->source);
+                if ($image === false) {
+                    throw new ConversionFailedException(
+                        'Gd failed when trying to load/create image (imagecreatefromgif() failed)'
+                    );
+                }
+                return $image;
+
+            case 'webp':
+                $image = imagecreatefromwebp($this->source);
+                if ($image === false) {
+                    throw new ConversionFailedException(
+                        'Gd failed when trying to load/create image (imagecreatefromwebp() failed)'
+                    );
+                }
+                return $image;
+
+            case 'avif':
+                $image = imagecreatefromavif($this->source);
+                if ($image === false) {
+                    throw new ConversionFailedException(
+                        'Gd failed when trying to load/create image (imagecreatefromavif() failed)'
                     );
                 }
                 return $image;
@@ -371,6 +407,8 @@ class Gd extends AbstractConverter
                 case 'avif':
                     // quality is optional, and ranges from 0 (worst quality, smaller file) to 100 (best quality, larger file).
                     // If -1 is provided, the default value 30 is used.
+
+                    // https://php.watch/versions/8.1/gd-avif#imageavif
 
                     // We do not use auto quality (yet). It would involve mapping between jpeg quality and avif quality
                     $quality = $this->options['quality'];

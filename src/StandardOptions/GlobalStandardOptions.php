@@ -22,7 +22,7 @@ class GlobalStandardOptions
      *
      *  @return  array  Array of options
      */
-    public function getGlobalStandardOptions($sourceImageType)
+    public static function getGlobalStandardOptions($sourceImageType)
     {
         return OptionFactory::createOptions([
             ['skip', 'boolean', ['default' => false]],

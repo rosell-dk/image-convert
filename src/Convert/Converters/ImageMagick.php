@@ -323,12 +323,6 @@ class ImageMagick extends AbstractConverter
      */
     private function createCommandLineOptions()
     {
-        // Available webp options for imagemagick are documented here:
-        // - https://imagemagick.org/script/webp.php
-        // - https://github.com/ImageMagick/ImageMagick/blob/main/coders/webp.c
-
-        // We should perhaps implement low-memory. Its already in cwebp, it
-        // could perhaps be promoted to a general option
 
         $commandArguments = [];
 
@@ -336,6 +330,13 @@ class ImageMagick extends AbstractConverter
 
         switch ($this->destinationType) {
             case 'webp':
+                // Available webp options for imagemagick are documented here:
+                // - https://imagemagick.org/script/webp.php
+                // - https://github.com/ImageMagick/ImageMagick/blob/main/coders/webp.c
+
+                // PS: We should perhaps implement low-memory. Its already in cwebp, it
+                // could perhaps be promoted to a general option
+
                 if ($this->isQualityDetectionRequiredButFailing()) {
                     // quality:auto was specified, but could not be determined.
                     // we cannot apply the max-quality logic, but we can provide auto quality
@@ -345,7 +346,9 @@ class ImageMagick extends AbstractConverter
                 }
                 $commandArguments = $this->prependWebPCommandLineArguments($commandArguments);
                 break;
+
             case 'avif':
+                // https://imagemagick.org/script/defines.php (search for "heic:")
                 $commandArguments[] = '-quality ' . escapeshellarg($this->options['quality']);
         }
 

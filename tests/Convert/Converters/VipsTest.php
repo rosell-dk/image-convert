@@ -69,6 +69,14 @@ class VipsTest extends TestCase
         $this->assertTrue(strpos($log, '[near_lossless] => 1') > 0, 'near_lossless was expected to be true');
         $this->assertTrue(strpos($log, '[Q] => 77') > 0, 'Q was expected to be 75 (the value of near-lossless)');
 
+        Vips::convert($source, $destination, [
+                'quality' => 80,
+                'method' => 5,
+                'encoding' => 'lossy'
+            ],
+            $bufferLogger
+        );
+        echo 'file size, webp (q:80):' . filesize($destination) . "\n";
     }
 
     /*public function testConvertJpg2GIF()
@@ -89,9 +97,36 @@ class VipsTest extends TestCase
         $destination = self::getImagePath('test.jpg.avif');
 
         $bufferLogger = new BufferLogger();
-        Vips::convert($source, $destination, [], $bufferLogger);
+        Vips::convert($source, $destination, [
+            'quality' => 40
+        ], $bufferLogger);
         $this->assertEquals('image/avif', ImageMimeTypeGuesser::detect($destination));
-        //echo $bufferLogger->getText("\n");
+        echo $bufferLogger->getText("\n");
+        $fileSizeQ40 = filesize($destination);
+        echo 'file size (q:40):' . filesize($destination) . "\n";
+
+        Vips::convert($source, $destination, [
+            'quality' => 30
+        ], $bufferLogger);
+        echo 'file size (q:30):' . filesize($destination) . "\n";
+
+        $this->assertTrue($fileSizeQ40 > filesize($destination));
+
+        Vips::convert($source, $destination, [
+            'quality' => 63
+        ], $bufferLogger);
+        echo 'file size (q:63):' . filesize($destination) . "\n";
+
+        Vips::convert($source, $destination, [
+            'quality' => 75
+        ], $bufferLogger);
+        echo 'file size (q:75):' . filesize($destination) . "\n";
+
+        Vips::convert($source, $destination, [
+            'quality' => 90
+        ], $bufferLogger);
+        echo 'file size (q:90):' . filesize($destination) . "\n";
+
     }
 
     public function testConvertAvif2Jpeg()

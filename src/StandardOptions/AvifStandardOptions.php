@@ -30,6 +30,33 @@ class AvifStandardOptions
             'converting/introduction-for-converting.md';
 
         return OptionFactory::createOptions([
+
+            /*
+            Options can be found here:
+            - Squoosh: https://github.com/GoogleChromeLabs/squoosh/blob/dev/libsquoosh/src/codecs.ts (search for "avif:")
+            - Vips: https://www.libvips.org/API/current/VipsForeignSave.html#vips-heifsave
+            - cavif: https://github.com/kornelski/cavif-rs
+            - avifenc:  type "avifenc", or see here: https://web.dev/compress-images-avif/
+            - avifcli: https://github.com/lovell/avif-cli
+
+            */
+            /*
+            "quality" or "cq-level" ?
+            - Squoosh uses "cqLevel" (0-63), and allows separate alpha quality (cqAlphaLevel)
+            - vips uses "Q"  (1-100) and has "lossless" option for lossless. Q:30 for avif is supposedly similar to Q:75 for jpeg
+            - imagemagick uses "-quality" (0-100). Setting it to -1 results in lossless
+                    https://stackoverflow.com/questions/55457916/how-to-use-format-specific-options-in-imagemagick
+            - cavif uses "quality" (1-100, default: 80)
+            - avifenc uses
+            - avif-cli uses "quality" (1-100), default: 50
+            - squoosh-cli
+
+            vips for some reason generates a little bit larger avif than imagemagick, but its around the same for all
+            quality settings, so they probably have the same view of what quality means
+            they both create significantly larger avif with quality 80 than webp with quality 80
+
+            */
+
             ['quality', 'int', [
                 'title' => 'Quality',
                 'description' => 'Q 30 gives about the same quality as JPEG Q 75.',
@@ -43,9 +70,10 @@ class AvifStandardOptions
             ]],
             /*
             "speed" or "effort" ?
-            Gd uses "speed"
-            Vips uses "effort", but used to use "speed".
-            It seems they are related (but opposite)
+            - Gd uses "speed"
+            - Vips uses "effort", but used to use "speed" (it seems they are related (but opposite)
+            - ImageMagick uses "speed"
+            - Squoosh.app uses "effort (0-10)"
 
             ['speed', 'int', [
                 'title' => 'Speed',
